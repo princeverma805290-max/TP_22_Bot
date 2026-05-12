@@ -1,6 +1,6 @@
 import os
 from flask import Flask
-from threading import Thread
+from multiprocessing import Process
 from pymongo import MongoClient
 
 from telegram import (
@@ -38,26 +38,29 @@ db = client["telegram_bot"]
 users = db["users"]
 
 # =========================
-# FAKE PORT / WEB SERVER
+# WEB SERVER
 # =========================
 
-app_web = Flask(__name__)
+web_app = Flask(__name__)
 
-@app_web.route('/')
+@web_app.route("/")
 def home():
     return "Bot Running Successfully!"
 
 def run_web():
-    app_web.run(host="0.0.0.0", port=PORT)
+    web_app.run(
+        host="0.0.0.0",
+        port=PORT
+    )
 
 # =========================
-# START
+# START COMMAND
 # =========================
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     text = (
-        "Bot Active Hai ✅\n\n"
+        "✅ Bot Active Hai\n\n"
         "Commands:\n"
         "/setname YOUR_NAME\n"
         "/mydata"
@@ -74,9 +77,11 @@ async def setname(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
 
     if not context.args:
+
         await update.message.reply_text(
             "Usage:\n/setname YourName"
         )
+
         return
 
     name = " ".join(context.args)
@@ -129,15 +134,22 @@ async def mydata(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     user_id = update.effective_user.id
 
-    data = users.find_one({"user_id": user_id})
+    data = users.find_one(
+        {"user_id": user_id}
+    )
 
     if not data:
+
         await update.message.reply_text(
             "❌ No Data Found"
         )
+
         return
 
-    name = data.get("name", "Not Set")
+    name = data.get(
+        "name",
+        "Not Set"
+    )
 
     keyboard = InlineKeyboardMarkup([
         [
@@ -176,9 +188,11 @@ async def close_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
 
     try:
+
         await query.message.delete()
 
     except:
+
         pass
 
 # =========================
@@ -188,6 +202,7 @@ async def close_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def owner(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if update.effective_user.id != OWNER_ID:
+
         return
 
     total_users = users.count_documents({})
@@ -247,6 +262,10 @@ def main():
 
 if __name__ == "__main__":
 
-    Thread(target=run_web).start()
+    web_process = Process(
+        target=run_web
+    )
+
+    web_process.start()
 
     main()
