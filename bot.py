@@ -1,6 +1,4 @@
 import os
-from flask import Flask
-from multiprocessing import Process
 from pymongo import MongoClient
 
 from telegram import (
@@ -25,7 +23,6 @@ from telegram.ext import (
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 OWNER_ID = int(os.getenv("OWNER_ID"))
 MONGO_URI = os.getenv("MONGO_URI")
-PORT = int(os.getenv("PORT", 10000))
 
 # =========================
 # DATABASE
@@ -38,23 +35,7 @@ db = client["telegram_bot"]
 users = db["users"]
 
 # =========================
-# WEB SERVER
-# =========================
-
-web_app = Flask(__name__)
-
-@web_app.route("/")
-def home():
-    return "Bot Running Successfully!"
-
-def run_web():
-    web_app.run(
-        host="0.0.0.0",
-        port=PORT
-    )
-
-# =========================
-# START COMMAND
+# START
 # =========================
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -196,7 +177,7 @@ async def close_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         pass
 
 # =========================
-# OWNER PANEL
+# OWNER
 # =========================
 
 async def owner(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -207,12 +188,9 @@ async def owner(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     total_users = users.count_documents({})
 
-    text = (
-        "👑 Owner Panel\n\n"
+    await update.message.reply_text(
         f"👤 Total Users: {total_users}"
     )
-
-    await update.message.reply_text(text)
 
 # =========================
 # MAIN
@@ -261,11 +239,5 @@ def main():
 # =========================
 
 if __name__ == "__main__":
-
-    web_process = Process(
-        target=run_web
-    )
-
-    web_process.start()
 
     main()
